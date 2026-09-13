@@ -36,6 +36,10 @@ agrofield-ai/
 │   └── utils/
 │
 ├── agents/
+│   ├── climate_agent.py
+│   ├── data_agent.py
+│   ├── soil_agent.py
+│   └── statistics_agent.py (Nota: Satellite Agent reside conceptualmente en src/data/ee_extractor.py, Math, ML, Orchestrator y Agronomy Agent pertenecen a etapas futuras)
 │
 ├── docs/
 │
