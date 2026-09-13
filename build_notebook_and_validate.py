@@ -29,27 +29,27 @@ cells = [
 ]
 
 nb = nbformat.v4.new_notebook(cells=cells)
-with open('c:/Users/PC/Desktop/Camilo/repos/AgroField/notebooks/04_vpd_nasa_power.ipynb', 'w') as f:
+with open('notebooks/04_vpd_nasa_power.ipynb', 'w') as f:
     nbformat.write(nb, f)
 
 
 # 2. Simulate the existing pipeline running and saving the CSV (which is what Notebook 04 implies)
 def simulate_existing_pipeline():
-    with open('c:/Users/PC/Desktop/Camilo/repos/AgroField/data/raw/nasa_power/POWER_Point_Daily_20260724_20260822_001d72S_078d76W_LST.json', 'r') as f:
+    with open('data/raw/nasa_power/POWER_Point_Daily_20260724_20260822_001d72S_078d76W_LST.json', 'r') as f:
         data = json.load(f)
     params = data['properties']['parameter']
     df = pd.DataFrame(params).reset_index().rename(columns={'index': 'fecha'})
     df['fecha'] = pd.to_datetime(df['fecha'], format='%Y%m%d')
     df = df.replace(-999.0, np.nan)
     df['VPD'] = 0.6108 * np.exp((17.27 * df['T2M']) / (df['T2M'] + 237.3)) * (1 - df['RH2M']/100)
-    df.to_csv('c:/Users/PC/Desktop/Camilo/repos/AgroField/data/processed/nasa_power_vpd_colta_20260724_20260822.csv', index=False)
+    df.to_csv('data/processed/nasa_power_vpd_colta_20260724_20260822.csv', index=False)
 
 simulate_existing_pipeline()
 
 
 # 3. Independent Agent Pipeline
 def independent_pipeline():
-    with open('c:/Users/PC/Desktop/Camilo/repos/AgroField/data/raw/nasa_power/POWER_Point_Daily_20260724_20260822_001d72S_078d76W_LST.json', 'r') as file:
+    with open('data/raw/nasa_power/POWER_Point_Daily_20260724_20260822_001d72S_078d76W_LST.json', 'r') as file:
         data = json.load(file)
     
     # Extract only required columns
@@ -77,7 +77,7 @@ def independent_pipeline():
     return df_indep
 
 # 4. Compare and Output Validation Report
-df_existing = pd.read_csv('c:/Users/PC/Desktop/Camilo/repos/AgroField/data/processed/nasa_power_vpd_colta_20260724_20260822.csv', parse_dates=['fecha'])
+df_existing = pd.read_csv('data/processed/nasa_power_vpd_colta_20260724_20260822.csv', parse_dates=['fecha'])
 df_indep = independent_pipeline()
 
 df_existing = df_existing[['fecha', 'T2M', 'RH2M', 'PRECTOTCORR', 'ALLSKY_SFC_SW_DWN', 'VPD']]

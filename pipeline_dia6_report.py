@@ -11,7 +11,7 @@ def calculate_vpd(T, RH):
     return vpd
 
 # 1. Cargar el JSON si ya lo bajamos, para no repetir request, o bajamos.
-json_path = 'c:/Users/PC/Desktop/Camilo/repos/AgroField/data/raw/nasa_power/POWER_Point_Daily_20250823_20260822_001d72S_078d76W_LST.json'
+json_path = 'data/raw/nasa_power/POWER_Point_Daily_20250823_20260822_001d72S_078d76W_LST.json'
 with open(json_path, 'r') as f:
     data = json.load(f)
 
@@ -33,7 +33,7 @@ nan_counts = df_hist.isna().sum().to_dict()
 missing_999 = (df_hist == -999.0).sum().sum()
 
 # Validacion contra el 30d
-df_30d = pd.read_csv('c:/Users/PC/Desktop/Camilo/repos/AgroField/data/processed/nasa_power_vpd_colta_20260724_20260822.csv', parse_dates=['fecha'])
+df_30d = pd.read_csv('data/processed/nasa_power_vpd_colta_20260724_20260822.csv', parse_dates=['fecha'])
 df_overlap = pd.merge(df_hist, df_30d, on='fecha', suffixes=('_hist', '_orig'), how='inner')
 
 discrepancias = []
@@ -55,7 +55,7 @@ for col in ['T2M', 'RH2M', 'PRECTOTCORR', 'ALLSKY_SFC_SW_DWN', 'VPD']:
 
 validation_pass = "FAIL (Diferencias encontradas debido a actualización retrospectiva de datos preliminares en NASA POWER)" if discrepancias else "PASS"
 
-df_hist.to_csv('c:/Users/PC/Desktop/Camilo/repos/AgroField/data/processed/nasa_power_colta_12m_vpd_20250823_20260822.csv', index=False)
+df_hist.to_csv('data/processed/nasa_power_colta_12m_vpd_20250823_20260822.csv', index=False)
 
 discrepancias_str = "\\n".join(discrepancias) if discrepancias else "Ninguna discrepancia."
 

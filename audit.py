@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 
 # Load data
-df_hist = pd.read_csv('c:/Users/PC/Desktop/Camilo/repos/AgroField/data/processed/nasa_power_colta_12m_vpd_20250823_20260822.csv', parse_dates=['fecha'])
-df_30d = pd.read_csv('c:/Users/PC/Desktop/Camilo/repos/AgroField/data/processed/nasa_power_vpd_colta_20260724_20260822.csv', parse_dates=['fecha'])
+df_hist = pd.read_csv('data/processed/nasa_power_colta_12m_vpd_20250823_20260822.csv', parse_dates=['fecha'])
+df_30d = pd.read_csv('data/processed/nasa_power_vpd_colta_20260724_20260822.csv', parse_dates=['fecha'])
 
 # Basic checks on 12-m dataset
 min_date = df_hist['fecha'].min().strftime('%Y-%m-%d')

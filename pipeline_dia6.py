@@ -20,7 +20,7 @@ if resp.status_code != 200:
     exit(1)
 
 data = resp.json()
-json_path = 'c:/Users/PC/Desktop/Camilo/repos/AgroField/data/raw/nasa_power/POWER_Point_Daily_20250823_20260822_001d72S_078d76W_LST.json'
+json_path = 'data/raw/nasa_power/POWER_Point_Daily_20250823_20260822_001d72S_078d76W_LST.json'
 with open(json_path, 'w') as f:
     json.dump(data, f)
 
@@ -42,7 +42,7 @@ nan_counts = df_hist.isna().sum().to_dict()
 missing_999 = (df_hist == -999.0).sum().sum()
 
 # Validacion contra el 30d
-df_30d = pd.read_csv('c:/Users/PC/Desktop/Camilo/repos/AgroField/data/processed/nasa_power_vpd_colta_20260724_20260822.csv', parse_dates=['fecha'])
+df_30d = pd.read_csv('data/processed/nasa_power_vpd_colta_20260724_20260822.csv', parse_dates=['fecha'])
 df_overlap = pd.merge(df_hist, df_30d, on='fecha', suffixes=('_hist', '_orig'), how='inner')
 
 diffs = 0
@@ -54,7 +54,7 @@ for col in ['T2M', 'RH2M', 'PRECTOTCORR', 'ALLSKY_SFC_SW_DWN']:
 
 validation_pass = "PASS" if diffs == 0 else "FAIL"
 
-df_hist.to_csv('c:/Users/PC/Desktop/Camilo/repos/AgroField/data/processed/nasa_power_colta_12m_vpd_20250823_20260822.csv', index=False)
+df_hist.to_csv('data/processed/nasa_power_colta_12m_vpd_20250823_20260822.csv', index=False)
 
 # Crear validacion output report
 report = f"""============================================
@@ -145,5 +145,5 @@ cells = [
 ]
 
 nb = nbformat.v4.new_notebook(cells=cells)
-with open('c:/Users/PC/Desktop/Camilo/repos/AgroField/notebooks/06_climate_timeseries.ipynb', 'w') as f:
+with open('notebooks/06_climate_timeseries.ipynb', 'w') as f:
     nbformat.write(nb, f)
