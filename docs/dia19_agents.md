@@ -57,6 +57,21 @@
 
 ## Decisiones Arquitectónicas (Día 19)
 
-1. **Separación de precesamiento técnico vs interpretativo:** Los algoritmos de extracción (ej. EE/SoilGrids) se mantienen en `src/data/`, mientras que la interpretación holística es responsabilidad exclusiva de la carpeta `agents/`.
-2. **Entradas adaptables:** Para la capa de Soil, el agente lee un diccionario debido a que son datos puntuales (`lat/lon`). Para Climate, se usa un `pandas.DataFrame` dado el enfoque como datos en serie temporal.
-3. Se han respetado estrictamente las funciones de validación previas sin duplicar lógica base como el cálculo de VPD de un `DataFrame`.
+1. **Separación de precesamiento técnico vs interpretativo:** Los algoritmos de extracción (ej. EE/SoilGrids) se mantienen en `src/data/`, mientras que la interpretación holística es responsabilidad exclusiva de la carpeta `agents/`. De esta forma, el código refleja: `DATOS REALES -> CÁLCULO -> REGLA/HEURÍSTICA -> INTERPRETACIÓN`.
+2. **Entradas adaptables:** Para la capa de Soil, el agente lee un diccionario debido a que son datos puntuales (`lat/lon`). Para Climate, se usa un `pandas.DataFrame` procesando todos los datos disponibles e ignorando dinámicamente valores ausentes (`NaN`).
+3. **Robustez ante datos faltantes:** Los agentes no inventan datos. Si falta VPD, pH o precipitación, el agente documenta explícitamente la ausencia y procesa el resto de variables utilizando comprobaciones de tipo seguras (ej. `isinstance` para diccionarios y `.empty` para DataFrames).
+
+## Limitaciones actuales
+
+Es muy importante tener en cuenta que las recomendaciones de estos agentes en el Día 19 son iniciales:
+* **Interpretaciones heurísticas:** Las clasificaciones (ej. "Muy frío", "Óptimo") son **reglas heurísticas iniciales utilizadas por AgroField AI** para el cultivo de papa, no modelos fenológicos formales universales.
+* **Precipitación media:** El hecho de que la media diaria acumulada sea alta, no equivale forzosamente a "Exceso de lluvias". La media no describe la distribución temporal de los eventos, el drenaje ni la humedad real del suelo.
+* **Diagnóstico real:** Los agentes no sustituyen un diagnóstico agronómico directo en campo.
+* **VPD y estrés hídrico:** Un VPD alto describe la demanda atmosférica evaporativa, pero por sí solo no confirma estrés hídrico de la planta si existe buen riego.
+* **Triángulo textural:** La evaluación de texturas del suelo (Arena, Limo, Arcilla) utiliza una heurística simplificada y no una clasificación formal mediante un triángulo textural matemático. Además, se asume que las texturas suman aproximadamente 100%. Los umbrales dependen de la variedad botánica, altitud de siembra y contextos específicos.
+
+## Pruebas automatizadas y Testing
+Se ha reemplazado la validación básica por aserciones estructuradas (`assert`) sin silenciamiento por `try/except`. El sistema ahora prueba rigurosamente los casos frontera de los umbrales de los agentes (ej. límite inferior y superior de temperaturas o pH) e inspecciona la estructura devuelta al trabajar con datos reales. Se ejecuta directamente desde:
+```bash
+python tests/test_day19_agents.py
+```

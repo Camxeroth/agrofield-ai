@@ -2,7 +2,11 @@ from typing import Dict, Any, List
 import pandas as pd
 
 def interpret_temperature(t_mean: float, t_min: float, t_max: float) -> str:
-    """Interpreta la temperatura para el ciclo del cultivo de papa."""
+    """
+    Interpreta la temperatura para el ciclo del cultivo de papa.
+    Esta es una regla heurística inicial utilizada por AgroField AI 
+    para interpretación del cultivo de papa; no sustituye un modelo fenológico formal.
+    """
     if t_mean < 8:
         return f"Muy fría ({t_mean:.1f}°C). Riesgo de heladas crónicas y retraso severo en el desarrollo."
     elif 8 <= t_mean <= 15:
@@ -22,7 +26,7 @@ def interpret_precipitation(precip_total: float, days_evaluated: int) -> str:
     elif 2.5 < daily_avg <= 5.0:
         return f"Humedad adecuada ({daily_avg:.1f} mm/día). Muy favorable para el cultivo en secano."
     else:
-        return f"Exceso de lluvias ({daily_avg:.1f} mm/día). Riesgo de encharcamiento y proliferación de Tizón tardío."
+        return f"Precipitación media diaria elevada ({daily_avg:.1f} mm/día). Puede aumentar el riesgo de exceso de humedad dependiendo de la distribución de las lluvias y las condiciones de drenaje."
 
 def interpret_vpd(vpd_mean: float) -> str:
     """Interpreta el Déficit de Presión de Vapor (VPD)."""
@@ -31,9 +35,9 @@ def interpret_vpd(vpd_mean: float) -> str:
     if vpd_mean < 0.5:
         return f"VPD muy bajo ({vpd_mean:.2f} kPa). Transpiración limitada, alta humedad propicia para enfermedades."
     elif 0.5 <= vpd_mean <= 1.2:
-        return f"VPD en rango óptimo ({vpd_mean:.2f} kPa). Flujo correcto de nutrientes, estomas saludables."
+        return f"VPD dentro del rango de referencia utilizado por AgroField AI ({vpd_mean:.2f} kPa)."
     else:
-        return f"VPD alto ({vpd_mean:.2f} kPa). Estrés hídrico cerrado estomático y déficit fotoasimilados."
+        return f"VPD alto ({vpd_mean:.2f} kPa). Asociado con una mayor demanda evaporativa atmosférica y potencial incremento del estrés hídrico si la disponibilidad de agua en el suelo es limitada."
 
 def run(climate_df: pd.DataFrame) -> Dict[str, Any]:
     """
@@ -56,20 +60,29 @@ def run(climate_df: pd.DataFrame) -> Dict[str, Any]:
         
     # Cálculos estadísticos básicos omitiendo NaNs
     days = len(climate_df)
-    t_mean = float(climate_df['T2M'].mean())
-    t_min = float(climate_df['T2M'].min())
-    t_max = float(climate_df['T2M'].max())
-    precip_total = float(climate_df['PRECTOTCORR'].sum())
+    
+    t_series = climate_df['T2M'].dropna()
+    p_series = climate_df['PRECTOTCORR'].dropna()
     
     agronomic_notes: List[str] = []
     
-    # Evaluar la temperatura
-    t_interp = interpret_temperature(t_mean, t_min, t_max)
-    agronomic_notes.append(f"Rango de temperatura: de {t_min:.1f}°C a {t_max:.1f}°C")
+    # Evaluar la temperatura si existen datos
+    if not t_series.empty:
+        t_mean = float(t_series.mean())
+        t_min = float(t_series.min())
+        t_max = float(t_series.max())
+        t_interp = interpret_temperature(t_mean, t_min, t_max)
+        agronomic_notes.append(f"Rango de temperatura: de {t_min:.1f}°C a {t_max:.1f}°C")
+    else:
+        t_interp = "Dato de temperatura no disponible."
     
-    # Evaluar precipitación
-    p_interp = interpret_precipitation(precip_total, days)
-    agronomic_notes.append(f"Precipitación acumulada: {precip_total:.1f} mm en {days} días")
+    # Evaluar precipitación si existen datos
+    if not p_series.empty:
+        precip_total = float(p_series.sum())
+        p_interp = interpret_precipitation(precip_total, days)
+        agronomic_notes.append(f"Precipitación acumulada: {precip_total:.1f} mm en {days} días")
+    else:
+        p_interp = "Dato de precipitación no disponible."
     
     # Evaluar VPD si existe
     vpd_interp = "Dato de VPD no disponible en este dataset."
