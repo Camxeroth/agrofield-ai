@@ -18,7 +18,7 @@ class EarthEngineExtractor:
             print("Para solucionarlo localmente, ejecuta: earthengine set_project <tu-proyecto-gcp>")
             raise
 
-    def get_sentinel2_timeseries(self, lon, lat, start_date, end_date):
+    def get_sentinel2_timeseries(self, lon, lat, start_date, end_date, max_clouds=20):
         """
         Extrae la serie temporal de NDVI y NDWI para un punto dado.
         
@@ -27,17 +27,18 @@ class EarthEngineExtractor:
             lat (float): Latitud del punto.
             start_date (str): Fecha de inicio en formato 'YYYY-MM-DD'.
             end_date (str): Fecha de fin en formato 'YYYY-MM-DD'.
+            max_clouds (int): Porcentaje máximo de nubosidad permitido.
             
         Returns:
             pd.DataFrame: DataFrame con las observaciones ordenadas por fecha.
         """
         point = ee.Geometry.Point([lon, lat])
         
-        # Filtramos por nuestra área de estudio, tiempo y una tolerancia razonable de nubes
+        # Filtramos por nuestra área de estudio, tiempo y tolerancia de nubes
         collection = (ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
                       .filterBounds(point)
                       .filterDate(start_date, end_date)
-                      .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20)))
+                      .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', max_clouds)))
                       
         def extract_point(image):
             date = ee.Date(image.get('system:time_start')).format('YYYY-MM-dd')
