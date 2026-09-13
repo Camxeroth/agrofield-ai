@@ -1,110 +1,226 @@
-# AgroField AI — Chimborazo
+# AgroField AI
+<img width="1920" height="1080" alt="miniaturas japonesas" src="https://github.com/user-attachments/assets/72b51ee2-b374-4c09-b7e8-c5397dd21a63" />
 
-AgroField AI es un sistema de análisis agrícola avanzado, centrado en cultivos de papa en el cantón Colta, Provincia de Chimborazo, Ecuador. Este sistema busca cruzar información procedente de variables satelitales, climáticas y edafológicas, construyendo interpretaciones prudentes basadas en datos objetivos para asistir en el entendimiento fenológico y riesgos del cultivo.
+**Sistema Multi-Agente de Análisis Agrícola para Cultivos de Papa — Cantón Colta, Chimborazo, Ecuador**
+
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://agrofield-ai.streamlit.app/)
+![Status](https://img.shields.io/badge/status-prototype-yellow)
+![Python](https://img.shields.io/badge/python-3.9%2B-blue)
+![License](https://img.shields.io/badge/license-not--specified-lightgrey)
+
+**Demo en vivo:** [https://agrofield-ai.streamlit.app/](https://agrofield-ai.streamlit.app/)
+
+---
+
+## Tabla de Contenidos
+
+1. [Resumen Ejecutivo](#resumen-ejecutivo)
+2. [Problema que Aborda](#problema-que-aborda)
+3. [Objetivo del Sistema](#objetivo-del-sistema)
+4. [Arquitectura Multi-Agente](#arquitectura-multi-agente)
+5. [Fuentes de Datos](#fuentes-de-datos)
+6. [Estructura del Repositorio](#estructura-del-repositorio)
+7. [Aplicación Web (Streamlit)](#aplicación-web-streamlit)
+8. [Instalación y Ejecución Local](#instalación-y-ejecución-local)
+9. [Despliegue en Streamlit Community Cloud](#despliegue-en-streamlit-community-cloud)
+10. [Pruebas Automatizadas](#pruebas-automatizadas)
+11. [Resultados del Baseline de Machine Learning](#resultados-del-baseline-de-machine-learning)
+12. [Limitaciones Conocidas](#limitaciones-conocidas)
+13. [Hoja de Ruta](#hoja-de-ruta)
+14. [Principios de Diseño](#principios-de-diseño)
+15. [Contribuciones](#contribuciones)
+
+---
+
+## Resumen Ejecutivo
+
+AgroField AI es un sistema de análisis agrícola que integra datos satelitales, climáticos y edafológicos para generar observaciones agronómicas objetivas sobre cultivos de papa en la sierra ecuatoriana. El sistema está diseñado alrededor de una arquitectura multi-agente donde cada agente resuelve una responsabilidad acotada (clima, suelo, integración de datos, estadística, machine learning y síntesis agronómica), priorizando la reproducibilidad, la trazabilidad de las conclusiones y la ausencia de prescripciones no fundamentadas.
+
+La plataforma está disponible como aplicación web mediante Streamlit, permitiendo que técnicos y agrónomos de campo obtengan un reporte agronómico traducido a lenguaje humano sin necesidad de interactuar con código o líneas de comando.
 
 ## Problema que Aborda
-La limitada capacidad de conectar datos climáticos (temperatura, déficit de presión de vapor, precipitación) con observaciones satelitales periódicas (NDVI) y condiciones de suelo estáticas (pH, carbono orgánico, texturas) para crear perfiles analíticos rigurosos en la sierra ecuatoriana, particularmente lidiando con la alta nubosidad y escasez de datos limpios.
 
-## Objetivo
-Implementar un *Pipeline* de datos integrado gobernado por un Sistema Multi-Agente capaz de limpiar, cruzar, validar y emitir observaciones heurísticas de rigor estadístico sobre factores climáticos, edáficos y satelitales sin emitir causalidades infundadas ni prescripciones químicas, priorizando la reproducibilidad y el tratamiento anti-*data-leakage*.
+Existe una limitada capacidad operativa para cruzar datos climáticos (temperatura, déficit de presión de vapor, precipitación), observaciones satelitales periódicas (NDVI) y condiciones estáticas de suelo (pH, carbono orgánico, texturas) en perfiles analíticos rigurosos aplicados a la sierra ecuatoriana. Esta región presenta dos restricciones estructurales relevantes:
 
-## Fuentes de Datos Utilizadas
-* **NASA POWER**: Mediciones continuas históricas climáticas estimadas (~0.5° resolución) (ex: `T2M`, `PRECTOTCORR`, `ALLSKY_SFC_SW_DWN`, `VPD`).
-* **Sentinel-2 / Google Earth Engine**: Observaciones satelitales multiespectrales esporádicas. Índices extraídos: `NDVI`, `NDWI`.
-* **SoilGrids / ISRIC**: Base de datos edafológica global. Extrae parámetros estáticos como `pH`, `SOC` y `Texturas` a profundidad del sistema radicular.
-* **SIPA/ESPAC**: Contexto agronómico general publico ecuatoriano (anclaje teórico).
+- Alta nubosidad persistente, que reduce la disponibilidad de observaciones satelitales limpias.
+- Escasez de infraestructura de datos agronómicos locales consolidados y accesibles para personal técnico no especializado en ciencia de datos.
+
+## Objetivo del Sistema
+
+Implementar un pipeline de datos integrado, gobernado por un sistema multi-agente, capaz de:
+
+- Limpiar, cruzar y validar variables climáticas, edáficas y satelitales.
+- Emitir observaciones heurísticas con rigor estadístico sobre dichos factores.
+- Evitar causalidades infundadas o prescripciones químicas no respaldadas por evidencia.
+- Priorizar la reproducibilidad y el tratamiento explícito contra la fuga de datos (*data leakage*).
 
 ## Arquitectura Multi-Agente
-AgroField AI usa una partición estricta entre la recolección de los datos y el raciocinio/evaluación. Los componentes de extracción están desplegados en `src/data/`, mientras que todo raciocinio heurístico ocurre exclusivamente en `agents/`. Las interacciones ocurren de forma modular entre diccionarios JSON aislados.
 
-### Descripción de los Agentes Implementados (Completados):
-1. **Climate Agent**: Recibe series temporales climáticas de NASA POWER. Emite evaluaciones sobre el déficit hídrico, estrés térmico, y vigor esperado (confianza media).
-2. **Soil Agent**: Analiza propiedades físicas y químicas (ej: de SoilGrids). Transforma valores en clasificaciones agronómicas contextuales (confianza media).
-3. **Data Agent**: Motor relacional. Efectúa un *Left Join* temporal usando el paso de Sentinel-2 como índice pivot, inyectando variables continuas (clima) y fijas (suelo) en un solo DataSet Unificado de observaciones coincidentes.
-4. **Statistics Agent**: Procesa estadísticas rigurosas correlacionales paramétricas (Pearson $r$) en el dataset, indicando magnitudes limitables explícitamente sin afirmar dependencia biológica determinista (confianza alta).
-5. **ML Agent**: Entrena y valida un modelo Baseline Supervisado (Regresión Lineal Simple) prediciendo $NDVI$ basado en clima, utilizando split 80/20 puramente cronológico y evitando contaminación (leakage).
-6. **Agronomy Agent**: Orquestador interpretativo o evaluador final. Reúne las conclusiones independientes de TODOS los demás agentes y dictamina observaciones integradas, indicadores de riesgo agronómico y acciones de monitoreo sin extralimitar la evidencia provista.
+El sistema aplica una separación estricta entre la recolección de datos y el razonamiento/evaluación. Los componentes de extracción residen en `src/data/`, mientras que todo el razonamiento heurístico ocurre exclusivamente en `agents/`. La comunicación entre componentes se realiza mediante diccionarios JSON aislados, sin acoplamiento directo entre módulos.
 
-## Estructura Real del Repositorio
-```text
+### Agentes Implementados
+
+| Agente | Responsabilidad | Nivel de Confianza |
+|---|---|---|
+| **Climate Agent** | Procesa series temporales de NASA POWER y evalúa déficit hídrico, estrés térmico y vigor esperado. | Media |
+| **Soil Agent** | Traduce propiedades físico-químicas del suelo (ej. SoilGrids) en clasificaciones agronómicas contextuales. | Media |
+| **Data Agent** | Motor relacional. Ejecuta un *left join* temporal usando el paso de Sentinel-2 como índice pivote, unificando variables continuas (clima) y fijas (suelo) en un dataset consolidado. | — |
+| **Statistics Agent** | Calcula correlaciones paramétricas (Pearson r), acotando explícitamente las magnitudes sin afirmar dependencia biológica determinista. | Alta |
+| **ML Agent** | Entrena y valida un modelo baseline supervisado (regresión lineal) para predecir NDVI a partir de variables climáticas, usando una partición 80/20 estrictamente cronológica. | — |
+| **Agronomy Agent** | Orquestador final. Integra las conclusiones de todos los agentes y emite el reporte agronómico consolidado, con indicadores de riesgo y acciones de monitoreo, sin extralimitar la evidencia disponible. | — |
+
+## Fuentes de Datos
+
+| Fuente | Tipo de Dato | Variables Extraídas |
+|---|---|---|
+| **NASA POWER** | Series climáticas históricas (resolución ~0.5°) | `T2M`, `PRECTOTCORR`, `ALLSKY_SFC_SW_DWN`, `VPD` |
+| **Sentinel-2 / Google Earth Engine** | Observaciones satelitales multiespectrales esporádicas | `NDVI`, `NDWI` |
+| **SoilGrids / ISRIC** | Base edafológica global estática | `pH`, `SOC` (carbono orgánico), texturas |
+| **SIPA / ESPAC** | Contexto agronómico público ecuatoriano | Anclaje teórico y de referencia |
+
+## Estructura del Repositorio
+
+```
 agrofield-ai/
-├── agents/             # Lógica interpretativa (Climate, Soil, Data, Statistics, ML, Agronomy)
+├── agents/               # Lógica interpretativa (Climate, Soil, Data, Statistics, ML, Agronomy)
 ├── data/
-│   ├── processed/      # Archivos CSV consolidados (Ej. NASA POWER diarios procesados)
-│   └── raw/            # Descargas en crudo JSON/metadatos
-├── docs/               # Documentación y trazabilidad de los 28 Días de desarrollo
-├── notebooks/          # Exploración interactiva y construcción inicial de Dataframes
+│   ├── processed/        # Archivos CSV consolidados (ej. NASA POWER procesado)
+│   └── raw/               # Descargas en crudo (JSON / metadatos)
+├── docs/                 # Documentación y trazabilidad del desarrollo
+├── notebooks/            # Exploración interactiva y construcción inicial de dataframes
 ├── src/
-│   ├── data/           # Clientes API extractores (ee_extractor.py, soilgrids_client.py)
-│   ├── features/       # Operaciones de algebra de índices (NDVI/NDWI)
-│   ├── models/         # (Reservado para exportaciones serielizadas futuras de esquemas)
+│   ├── data/              # Clientes de extracción (ee_extractor.py, soilgrids_client.py)
+│   ├── features/          # Álgebra de índices espectrales (NDVI / NDWI)
+│   ├── models/            # Reservado para exportaciones serializadas futuras
 │   └── utils/
-├── tests/              # Pruebas automatizadas (Agents, Integration, Matrices, Math)
-├── config.py           # Variables globales de zona (Colta, Chimborazo)
-├── requirements.txt    # Dependencias estrictas necesarias para reproducir
-└── run_agronomy_e2e.py # Prueba del Agronomy Agent que orquesta un reporte completo E2E
+├── tests/                # Pruebas automatizadas (agentes, integración, matrices, estadística)
+├── app.py                # Aplicación web (Streamlit)
+├── config.py             # Variables globales de zona (Colta, Chimborazo)
+├── requirements.txt      # Dependencias necesarias para reproducir el entorno
+└── run_agronomy_e2e.py   # Prueba end-to-end del Agronomy Agent
 ```
 
-## Reproducibilidad y Ejecución
+## Aplicación Web (Streamlit)
 
-Las etapas se encuentran listas para su configuración bajo un flujo de python estándar. Para ejecutar la demostración final, proceda en un entorno limpio de Python 3.9+:
+La interfaz productiva del sistema está disponible en:
 
-1. **Clonar el Repositorio e Inicializar entorno:**
+**[https://agrofield-ai.streamlit.app/](https://agrofield-ai.streamlit.app/)**
+
+Esta interfaz permite que personal técnico y agrónomos ejecuten los agentes del sistema sin ver código fuente ni usar la terminal.
+
+Flujo de uso:
+
+1. Ingresar el nombre referencial de la parcela y sus coordenadas geográficas (latitud, longitud).
+2. Seleccionar el tipo de cultivo a evaluar.
+3. Ejecutar el análisis mediante el botón **Analizar Parcela**.
+4. Revisar el reporte generado, organizado en pestañas de Clima, Suelo y Vegetación.
+5. Descargar el reporte final en formato PDF si se requiere.
+
+Toda la complejidad de extracción de datos y modelado queda oculta detrás de la interfaz.
+
+## Instalación y Ejecución Local
+
+Requiere Python 3.9 o superior.
+
 ```bash
-git clone https://github.com/usuario/agrofield-ai.git
+git clone https://github.com/Camxeroth/agrofield-ai.git
 cd agrofield-ai
 python -m venv .venv
+```
 
-# En Windows:
+Activar el entorno virtual:
+
+```bash
+# Windows
 .venv\Scripts\activate
-# En Linux/Mac:
+
+# Linux / Mac
 source .venv/bin/activate
 ```
 
-2. **Instalar Dependencias:**
+Instalar dependencias:
+
 ```bash
 pip install -r requirements.txt
 ```
 
-3. **Autenticación (Solo si pretende extender/re-ejecutar las descargas de Earth Engine localmente)**:
-El módulo de `ee_extractor.py` necesita acceso de Google Earth Engine. Utilice la línea de comandos autenticada de `earthengine-api` instalada en su entorno:
+Ejecutar la aplicación web localmente:
+
 ```bash
-earthengine authenticate
-earthengine set_project <SU_ID_DE_PROYECTO_GCP>
+streamlit run app.py
 ```
 
-4. **Ejecución de Pruebas Unitarias/Integración (Opcional pero Recomendado)**:
-Verifican el rigor estadístico de Pearson, los límites umbrales del Climate Agent y la robustez del Split del ML Agent.
+### Autenticación de Google Earth Engine (opcional)
+
+Necesaria únicamente si se requiere re-ejecutar o extender las descargas satelitales localmente:
+
+```bash
+earthengine authenticate
+earthengine set_project <ID_DE_PROYECTO_GCP>
+```
+
+### Ejecución End-to-End por Consola
+
+```bash
+python run_agronomy_e2e.py
+```
+
+Este script orquesta todos los agentes usando flujos de datos reales pero pre-calculados (arrays de NDVI representativos y series históricas de NASA POWER ya purificadas), generando el reporte agronómico integral sin disparar descargas asíncronas costosas contra servicios en la nube durante la prueba. Presenta paneles independientes por cada bloque del sistema mediante `rich`, evitando el truncamiento de descripciones extensas.
+
+## Despliegue en Streamlit Community Cloud
+
+Para publicar una instancia propia del sistema:
+
+1. Subir el repositorio a GitHub.
+2. Acceder a [Streamlit Community Cloud](https://share.streamlit.io/) e iniciar sesión con GitHub.
+3. Crear una nueva app ("New app").
+4. Seleccionar el repositorio, la rama (`main`) y definir `app.py` como archivo principal.
+5. Desplegar. Streamlit instalará las dependencias declaradas en `requirements.txt` y generará un enlace público en pocos minutos.
+
+## Pruebas Automatizadas
+
 ```bash
 python -m pytest tests/
 ```
 
-5. **Prueba End-to-End Integrada**:
-```bash
-python run_agronomy_e2e.py
-```
-Esta validación emite una interfaz de terminal profesional e interactiva soportada por `rich`, presentando paneles independientes por cada bloque del sistema multi-agente, previniendo el truncamiento de descripciones extensas y facilitando el escrutinio estadístico de manera humana.
+Las pruebas verifican, entre otros aspectos:
 
-### ¿Qué demuestra el run_agronomy_e2e.py?
-El script simula la ejecución de orquestación de **todos los agentes** usando flujos de datos reales pero mockeados o pre-calculados, como arrays de NDVI representacionales y DataFrames históricos de NASA POWER purificados, logrando emitir el *Reporte Integral Agronómico final*. Demuestra la coherencia estructural y sintáctica de procesamiento integral sin lanzar descargas asíncronas costosas (GCP) en tiempo de ejecución de prueba. El pipeline completamente automático y sin fallas desde 0 en ambiente Cloud *sigue en calidad de prototipo.*
+- El rigor estadístico del cálculo de correlación de Pearson.
+- Los límites y umbrales definidos en el Climate Agent.
+- La robustez de la partición cronológica utilizada por el ML Agent.
 
 ## Resultados del Baseline de Machine Learning
-El ML Agent aborda la regresión continua para predecir **NDVI espectral**. Debido al estricto apego para mitigar *Data Leakage*, excluyendo atributos de reflejo futuro y asumiendo un tamaño de muestra reducido de *N = 53 observaciones válidas sin nubes*, el Baseline Linear Classifier arrojó:
 
-* **MAE (Error Absoluto Medio):** ≈ 0.076
-* **RMSE:** ≈ 0.084
-* **$R^2$:** ≈ -0.852
+El ML Agent aborda una regresión continua para predecir el índice NDVI espectral. Bajo un estricto control contra fuga de datos (excluyendo atributos de reflejo futuro) y con una muestra reducida de N = 53 observaciones válidas sin cobertura de nubes, el modelo lineal baseline obtuvo:
 
-**Interpretación Metodológica:**
-Este $R^2$ negativo declara honestamente y de manera transparente que un modelo lineal estricto sin retrasos temporales *Lags* (predecir vigor utilizando clima estrictamente de hoy) predice la reacción fisiológica de forma inferior a lo que lo haría adivinando meramente una media global. Todo esto declara que **La biología vegetal manifiesta demoras sistémicas no predecibles instantáneamente de forma lineal**. No afirmamos ninguna causalidad inventada o falsificada. 
+| Métrica | Valor |
+|---|---|
+| MAE (Error Absoluto Medio) | ≈ 0.076 |
+| RMSE | ≈ 0.084 |
+| R² | ≈ -0.852 |
 
-## Limitaciones
+**Interpretación metodológica:** un R² negativo indica, de forma transparente, que un modelo lineal estricto sin variables rezagadas (*lags*) predice la respuesta fisiológica del cultivo peor de lo que lo haría estimar simplemente la media global. Esto sugiere que la biología vegetal presenta demoras sistémicas que no son capturadas por una relación lineal instantánea. El sistema no afirma ninguna causalidad no respaldada por los datos.
 
-1. **Datos de Muestra**: Observaciones limitadas a interceptaciones válidas del Sentinel-2, enormemente disminuidas por el alto índice de nubosidad continuo interandino. Las métricas del modelo (N=53) deben leerse con cuidado y considerarse prototipos.
-2. **Estimaciones Generales**: El clima derivado de reanálisis satelital (NASA POWER) estima celdas de un 0.5°, por ende, no capta con fidelidad altísima el comportamiento microclimático a nivel de lote.
-3. **Ausencia de Fenología Botánica Empírica**: Los agentes heurísticos asumen un cultivo general constante, omitiendo si la papa en un periodo de baja humedad/VPD se encuentra en desarrollo vegetativo o germinación.
-4. **Heurísticas No Prescriptivas**: Los agentes emiten lecturas agronómicas basadas en literatura teórica y *nunca recomiendan ni diagnostican oficialmente*. 
+## Limitaciones Conocidas
 
-## Trabajo Futuro
-* **Windowing Agents**: Expansión a predicciones *Lagged Features*, arrastrando ventanas de temperaturas pasadas (ej. 15-30 días de suma térmica) para justificar fenológicamente el resultado fototrópico de NDVI visualizado.
-* **Integración del Orquestador Dinámico**: Abstraer y poner todas las descargas API online, transformando el `run_agronomy_e2e.py` en una ejecución dinámica para nuevos cantones bajo demanda.
+1. **Tamaño de muestra:** las observaciones están limitadas a intercepciones válidas de Sentinel-2, reducidas de forma significativa por la alta nubosidad interandina persistente. Las métricas del modelo (N=53) deben interpretarse como resultado de un prototipo.
+2. **Resolución climática:** los datos de NASA POWER estiman celdas de aproximadamente 0.5° de resolución, por lo que no capturan con precisión el comportamiento microclimático a nivel de lote individual.
+3. **Ausencia de fenología botánica empírica:** los agentes heurísticos asumen un estado de cultivo general constante, sin diferenciar si el cultivo se encuentra en desarrollo vegetativo, floración o germinación durante periodos de baja humedad o VPD.
+4. **Heurísticas no prescriptivas:** los agentes emiten lecturas agronómicas fundamentadas en literatura teórica y en ningún caso constituyen un diagnóstico o recomendación oficial de manejo agrícola.
+
+## Hoja de Ruta
+
+- **Agentes con ventanas temporales (windowing):** incorporar variables rezagadas (por ejemplo, sumas térmicas de 15 a 30 días) para justificar fenológicamente la respuesta fototrópica observada en el NDVI.
+- **Orquestador dinámico:** llevar todas las descargas de API a modo en línea, transformando `run_agronomy_e2e.py` en un flujo de ejecución bajo demanda para nuevos cantones o zonas geográficas.
+
+## Principios de Diseño
+
+- Separación estricta entre recolección de datos y razonamiento interpretativo.
+- Comunicación entre agentes mediante estructuras de datos aisladas (JSON), sin acoplamiento directo de código.
+- Control explícito de fuga de datos en cualquier evaluación predictiva.
+- Transparencia metodológica: los resultados, incluidos los negativos, se reportan sin distorsión.
+- Ninguna salida del sistema constituye una recomendación agronómica oficial ni una prescripción de insumos.
+
+## Contribuciones
+
+Este proyecto se encuentra en fase de prototipo activo. Sugerencias, reportes de incidencias y propuestas de extensión pueden canalizarse mediante issues o pull requests en el repositorio.
